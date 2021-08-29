@@ -12,6 +12,27 @@ logger = telebot.logger
 telebot.logger.setLevel(logging.WARNING)  # Outputs debug messages to console.
 bot = telebot.AsyncTeleBot(token + ":" + api_token)
 
+@bot.message_handler(commands=["weather"])
+def weather(message):
+    try:
+        city = message.text.replace("/weather ", "")
+        resp = wthr.weatherbycity(city)
+        if resp.status_code == 200:
+            dict_str = resp.content.decode("UTF-8")
+            data = ast.literal_eval(dict_str)
+        bot.reply_to(message, "{0}\n"
+                              "Темп. {1}\n"
+                              "Ощущается как {2}\n"
+                              "Мин {3}\n"
+                              "Макс {4}\n"
+                              "Влажность {5}%".format(data['weather'][0]['description'],
+                                                      data['main']['temp'],
+                                                      data['main']['feels_like'],
+                                                      data['main']['temp_min'],
+                                                      data['main']['temp_max'],
+                                                      data['main']['humidity']))
+    except Exception as e:
+        print(e)
 
 @bot.message_handler(content_types=["text"])
 def sendcunt(message):
@@ -19,6 +40,7 @@ def sendcunt(message):
         bot.send_sticker(message.chat.id,
                          'CAACAgIAAxkBAAIEcWEo5-u9aIvKB5C0W5hGpuVD9BoIAALjEgAC9dC2HQhKdZuwAd7OIAQ',
                          message.id)
+
 
 @bot.inline_handler(lambda query: query.query == 'weather')
 def query_text(inline_query):
