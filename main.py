@@ -17,7 +17,7 @@ bot = telebot.AsyncTeleBot(token + ":" + api_token)
 def weather(message):
     try:
         if message.text in ["/weather", "/weather@Winkies_bot"]:
-            markup = types.ForceReply(selective=False)
+            markup = types.ForceReply()
             bot.send_message(message.chat.id, "Напиши мне название города или населенного пункта", reply_markup=markup)
         else:
             city = message.text.replace("/weather ", "")
