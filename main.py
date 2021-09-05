@@ -38,7 +38,7 @@ def refreshinlineButtonMarkup(message):
     for city in cities:
         markup.add(types.InlineKeyboardButton(text=city[1],
                                               callback_data="['city', '" + city[1] + "']"),
-                   types.InlineKeyboardButton(text="Прогноз 12 ч.",
+                   types.InlineKeyboardButton(text="Прогноз 24 ч.",
                                               callback_data="['forecast', '" + city[1] + "']"),
                    types.InlineKeyboardButton(text=u'\U0000274C',
                                               callback_data="['delete', '" + city[1] + "']")
