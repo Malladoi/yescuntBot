@@ -2,7 +2,6 @@ import os
 import telebot
 import logging
 from telebot import types
-
 import picGen
 import weatherAPIwrap as wthr
 import ast
@@ -138,23 +137,28 @@ def callback_query(call):
         if resp.status_code == 200:
             dict_str = resp.content.decode("UTF-8")
             data = ast.literal_eval(dict_str)
-            messagetext = "Прогноз на сутки для н\п {0}\n".format(data['city']['name'])
-            for forecast in data['list']:
-                messagetext += "{0} {1} {2} " \
-                               "Т. {3} {4} " \
-                               "Ощ. {5} {6} " \
-                               "Вл. {7}%\n".format(datetime.utcfromtimestamp(
-                    forecast['dt'] + data['city']['timezone']).strftime(
-                    '%H:%M %d-%m'),
-                    getWeatherEmoji(
-                        str(forecast['weather'][0]['main']).lower()),
-                    forecast['weather'][0]['description'],
-                    forecast['main']['temp'], "C{0}".format(degree_sign),
-                    forecast['main']['feels_like'], "C{0}".format(degree_sign),
-                    forecast['main']['humidity'])
-            bot.edit_message_text(chat_id=call.message.chat.id,
-                                  message_id=call.message.id,
-                                  text=messagetext)
+            if dbwork.getchatsettings(call.message.chat.id)[0][1] == 1:
+                messagetext = "Прогноз на сутки для н\п {0}\n".format(data['city']['name'])
+                for forecast in data['list']:
+                    messagetext += "{0} {1} {2} " \
+                                   "Т. {3} {4} " \
+                                   "Ощ. {5} {6} " \
+                                   "Вл. {7}%\n".format(datetime.utcfromtimestamp(
+                        forecast['dt'] + data['city']['timezone']).strftime(
+                        '%H:%M %d-%m'),
+                        getWeatherEmoji(
+                            str(forecast['weather'][0]['main']).lower()),
+                        forecast['weather'][0]['description'],
+                        forecast['main']['temp'], "C{0}".format(degree_sign),
+                        forecast['main']['feels_like'], "C{0}".format(degree_sign),
+                        forecast['main']['humidity'])
+                bot.edit_message_text(chat_id=call.message.chat.id,
+                                      message_id=call.message.id,
+                                      text=messagetext)
+            else:
+                bot.delete_message(call.message.chat.id, call.message.id)
+                bot.send_photo(chat_id=call.message.chat.id, photo=
+                picGen.createWeatherForecastImg(data, 4))
 
 
 @bot.message_handler(content_types=["text"])
