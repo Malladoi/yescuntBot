@@ -11,8 +11,8 @@ degree_sign = u'\N{DEGREE SIGN}'
 
 # Openweathermap Weather codes and corressponding emojis
 weatheremoji = {"thunderstorm": u'\U0001F4A8',
-                "trizzle": u'\U0001F4A7',
-                "tain": u'\U00002614',
+                "drizzle": u'\U0001F4A7',
+                "rain": u'\U00002614',
                 "snow": u'\U00002744',
                 "snowman": u'\U000026C4',
                 "atmosphere": u'\U0001F301',
