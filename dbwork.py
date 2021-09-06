@@ -13,6 +13,28 @@ def getcitiesforchat(chatid):
     cursor.close()
     return records
 
+def getchatsettings(chatid):
+    sql_com = 'SELECT chatid, respmode	FROM public."tChatSetting" where chatid = {0};'.format(chatid)
+    cursor = conn.cursor()
+    cursor.execute(sql_com)
+    records = cursor.fetchall()
+    cursor.close()
+    return records
+
+def setchatsettings(chatid, respmode):
+    sql_com = 'INSERT INTO public."tChatSetting"(chatid, respmode)	VALUES ({0}, {1});'.format(chatid, respmode)
+    cursor = conn.cursor()
+    cursor.execute(sql_com)
+    conn.commit()
+    cursor.close()
+
+def updarechatsettings(chatid, respmode):
+    sql_com = 'update public."tChatSetting" set respmode = {0} where chatid = {1};'.format(respmode, chatid)
+    cursor = conn.cursor()
+    cursor.execute(sql_com)
+    conn.commit()
+    cursor.close()
+
 def addnewcity(chatid, city):
     with conn.cursor() as cursor:
         sql_com = 'INSERT INTO public."tSavedCities"(chatid, city)	VALUES ({0}, \'{1}\');'.format(chatid, city)

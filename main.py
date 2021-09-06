@@ -2,6 +2,8 @@ import os
 import telebot
 import logging
 from telebot import types
+
+import picGen
 import weatherAPIwrap as wthr
 import ast
 import dbwork
@@ -20,8 +22,12 @@ weatheremoji = {"thunderstorm": u'\U0001F4A8',
                 "clouds": u'\U000026C5',
                 "defaultemoji": u'\U0001F300'}
 
+pic_emoji = u'\U0001F5BC'
+text_emoji = u'\U0001F4C4'
+
 getWeatherEmoji = lambda emojiname: weatheremoji[emojiname] if emojiname in weatheremoji.keys() else weatheremoji[
     'defaultemoji']
+getRespmodeEmoji = lambda respmode: text_emoji if respmode == 1 else pic_emoji
 
 token = os.environ["TELEGRAM_TOKEN"]
 api_token = os.environ["API_TOKEN"]
@@ -35,6 +41,10 @@ bot = telebot.AsyncTeleBot(token + ":" + api_token)
 def refreshinlineButtonMarkup(message):
     markup = types.InlineKeyboardMarkup()
     cities = dbwork.getcitiesforchat(message.chat.id)
+    settings = dbwork.getchatsettings(message.chat.id)
+    if len(settings) == 0:
+        dbwork.setchatsettings(message.chat.id, 1)
+        settings = dbwork.getchatsettings(message.chat.id)
     for city in cities:
         markup.add(types.InlineKeyboardButton(text=city[1],
                                               callback_data="['city', '" + city[1] + "']"),
@@ -43,7 +53,9 @@ def refreshinlineButtonMarkup(message):
                    types.InlineKeyboardButton(text=u'\U0000274C',
                                               callback_data="['delete', '" + city[1] + "']")
                    )
-    markup.add(types.InlineKeyboardButton("Добавить", callback_data="btn_add_city"))
+    markup.add(types.InlineKeyboardButton("Добавить", callback_data="btn_add_city"),
+               types.InlineKeyboardButton(getRespmodeEmoji(settings[0][1]),
+                                          callback_data="btn_respmode_{0}".format(str(settings[0][1]))))
     return markup
 
 
@@ -54,8 +66,6 @@ def weather(message):
             bot.send_message(message.chat.id,
                              'Выбери ранее введенный город или добавь новый',
                              reply_markup=refreshinlineButtonMarkup(message))
-        else:
-            print('lol')
     except Exception as e:
         print(e)
 
@@ -66,6 +76,15 @@ def addnewcity(call):
                           message_id=call.message.message_id,
                           text='Пришли в ответ на это сообщение название нового города',
                           parse_mode='Markdown')
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('btn_respmode_'))
+def setrespsettings(call):
+    dbwork.updarechatsettings(call.message.chat.id,
+                              (lambda respmode: 1 if call.data.split('_')[2] == '2' else 2)(call.data.split('_')[2]))
+    bot.edit_message_reply_markup(chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=refreshinlineButtonMarkup(call.message))
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -80,26 +99,40 @@ def callback_query(call):
         if resp.status_code == 200:
             dict_str = resp.content.decode("UTF-8")
             data = ast.literal_eval(dict_str)
-            bot.edit_message_text(chat_id=call.message.chat.id,
-                                  message_id=call.message.id,
-                                  text="Погода для н\п {0} на {1}\n"
-                                       "{2} {3}\n"
-                                       "Т. {4} {5}\n"
-                                       "Ощущается {6} {7}\n"
-                                  # "Мин {8} {9}\n"
-                                  # "Макс {10} {11}\n"
-                                       "Влажность {8}%".format(data['name'],
-                                                               datetime.utcfromtimestamp(
-                                                                   data['dt'] + data['timezone']).strftime(
-                                                                   '%H:%M %d-%m-%Y'),
-                                                               getWeatherEmoji(
-                                                                   str(data['weather'][0]['main']).lower()),
-                                                               data['weather'][0]['description'],
-                                                               data['main']['temp'], "C{0}".format(degree_sign),
-                                                               data['main']['feels_like'], "C{0}".format(degree_sign),
-                                                               # data['main']['temp_min'], "C{0}".format(degree_sign),
-                                                               # data['main']['temp_max'], "C{0}".format(degree_sign),
-                                                               data['main']['humidity']))
+            if dbwork.getchatsettings(call.message.chat.id)[0][1] == 1:
+                bot.edit_message_text(chat_id=call.message.chat.id,
+                                      message_id=call.message.id,
+                                      text="Погода для н\п {0} на {1}\n"
+                                           "{2} {3}\n"
+                                           "Т. {4} {5}\n"
+                                           "Ощущается {6} {7}\n"
+                                      # "Мин {8} {9}\n"
+                                      # "Макс {10} {11}\n"
+                                           "Влажность {8}%".format(data['name'],
+                                                                   datetime.utcfromtimestamp(
+                                                                       data['dt'] + data['timezone']).strftime(
+                                                                       '%H:%M %d-%m-%Y'),
+                                                                   getWeatherEmoji(
+                                                                       str(data['weather'][0]['main']).lower()),
+                                                                   data['weather'][0]['description'],
+                                                                   data['main']['temp'], "C{0}".format(degree_sign),
+                                                                   data['main']['feels_like'],
+                                                                   "C{0}".format(degree_sign),
+                                                                   # data['main']['temp_min'], "C{0}".format(degree_sign),
+                                                                   # data['main']['temp_max'], "C{0}".format(degree_sign),
+                                                                   data['main']['humidity']))
+            else:
+                bot.delete_message(call.message.chat.id, call.message.id)
+                bot.send_photo(chat_id=call.message.chat.id, photo=
+                picGen.createCurrWeatherImg(data['weather'][0]['icon'],
+                                            4,
+                                            datetime.utcfromtimestamp(data['dt'] + data['timezone']).strftime(
+                                                '%H:%M %d-%m-%Y'),
+                                            data['name'],
+                                            data['main']['temp'],
+                                            data['weather'][0]['description'],
+                                            data['main']['feels_like'],
+                                            data['main']['humidity']))
     if ast.literal_eval(call.data)[0] == 'forecast':
         resp = wthr.weatherbycityforecast5day(ast.literal_eval(call.data)[1], 9)
         if resp.status_code == 200:
