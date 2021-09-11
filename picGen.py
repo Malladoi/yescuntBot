@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 from io import BytesIO
 from datetime import datetime
+
 degree_sign = u'\N{DEGREE SIGN}'
 
 
@@ -27,6 +28,7 @@ def createCurrWeatherImg(icon, scale, dt, city, temp, description, feelslike, hu
            font=descrfont, fill=(72, 72, 74))
     return im
 
+
 def createWeatherForecastImg(data, scale):
     reqRobotoRegular = requests.get(
         "https://github.com/googlefonts/roboto/blob/main/src/hinted/Roboto-Regular.ttf?raw=true")
@@ -47,12 +49,16 @@ def createWeatherForecastImg(data, scale):
         offset = 30
         if cnt == 0:
             d.text(xy=(24 * scale, (30 * scale * (cnt + 1)) + ((offset + 13) * scale)),
-                   text="{0}".format(datetime.now().strftime('%d.%m')), font=tempfont,
+                   text="{0}".format(
+                       datetime.fromtimestamp(datetime.utcnow().timestamp() + data['city']['timezone']).strftime(
+                           '%d.%m')), font=tempfont,
                    fill=(72, 72, 74))
             d.text(xy=(10 * scale, (30 * scale * (cnt + 1)) + ((offset + 23) * scale)),
-                   text="{0}-{1}".format(datetime.now().strftime('%H:%M'),
-                                         datetime.utcfromtimestamp(fc['dt'] + data['city']['timezone']).strftime(
-                                             '%H:%M')),
+                   text="{0}-{1}".format(
+                       datetime.fromtimestamp(datetime.utcnow().timestamp() + data['city']['timezone']).strftime(
+                           '%H:%M'),
+                       datetime.utcfromtimestamp(fc['dt'] + data['city']['timezone']).strftime(
+                           '%H:%M')),
                    font=tempfont,
                    fill=(72, 72, 74))
         else:
