@@ -65,7 +65,7 @@ def refreshinlineButtonMarkup(message):
 def refreshinlineButtonMarkupRunes(message):
     markup = types.InlineKeyboardMarkup()
     runes = dbwork.getAllRunes()
-    for tier in range(0, 10):
+    for tier in range(0, 11):
         markup.add(types.InlineKeyboardButton(text=runes[tier][1],
                                               callback_data="['rune', {0}]".format(str(runes[tier][0]))),
                    types.InlineKeyboardButton(text=runes[tier + 11][1],
@@ -82,7 +82,7 @@ def refreshinlineButtonMarkupRunes4Runeword(message):
     runeSettings = dbwork.getRuneSettinds(message.chat.id)
     ifRuneCheckedBool = lambda rid: True if rid in [rs[0] for rs in runeSettings] else False
     ifRuneCheckedEmoji = lambda ifCheked: check_emoji if ifCheked else uncheck_emoji
-    for tier in range(0, 10):
+    for tier in range(0, 11):
         markup.add(types.InlineKeyboardButton(
             text="{0}{1}".format(runes[tier][1], ifRuneCheckedEmoji(ifRuneCheckedBool(runes[tier][0]))),
             callback_data="['rune_check', {0}, {1}]".format(str(runes[tier][0]),
