@@ -23,6 +23,8 @@ weatheremoji = {"thunderstorm": u'\U0001F4A8',
 
 pic_emoji = u'\U0001F5BC'
 text_emoji = u'\U0001F4C4'
+check_emoji = u'\U00002714'
+uncheck_emoji = u'\U00002610'
 
 getWeatherEmoji = lambda emojiname: weatheremoji[emojiname] if emojiname in weatheremoji.keys() else weatheremoji[
     'defaultemoji']
@@ -35,6 +37,8 @@ bot_name = os.environ["BOT_NAME"]
 logger = telebot.logger
 telebot.logger.setLevel(logging.WARNING)  # Outputs debug messages to console.
 bot = telebot.AsyncTeleBot(token + ":" + api_token)
+
+runewords = dbwork.getRunewords()
 
 
 def refreshinlineButtonMarkup(message):
@@ -61,14 +65,53 @@ def refreshinlineButtonMarkup(message):
 def refreshinlineButtonMarkupRunes(message):
     markup = types.InlineKeyboardMarkup()
     runes = dbwork.getAllRunes()
-    for tier in range(1, 11):
+    for tier in range(0, 10):
         markup.add(types.InlineKeyboardButton(text=runes[tier][1],
-                                              callback_data="['rune', " + str(runes[tier][0]) + "]"),
+                                              callback_data="['rune', {0}]".format(str(runes[tier][0]))),
                    types.InlineKeyboardButton(text=runes[tier + 11][1],
-                                              callback_data="['rune', " + str(runes[tier + 11][0]) + "]"),
+                                              callback_data="['rune', {0}]".format(str(runes[tier + 11][0]))),
                    types.InlineKeyboardButton(text=runes[tier + 22][1],
-                                              callback_data="['rune', " + str(runes[tier + 22][0]) + "]")
+                                              callback_data="['rune', {0}]".format(str(runes[tier + 22][0])))
                    )
+    return markup
+
+
+def refreshinlineButtonMarkupRunes4Runeword(message):
+    markup = types.InlineKeyboardMarkup()
+    runes = dbwork.getAllRunes()
+    runeSettings = dbwork.getRuneSettinds(message.chat.id)
+    ifRuneCheckedBool = lambda rid: True if rid in [rs[0] for rs in runeSettings] else False
+    ifRuneCheckedEmoji = lambda ifCheked: check_emoji if ifCheked else uncheck_emoji
+    for tier in range(0, 10):
+        markup.add(types.InlineKeyboardButton(
+            text="{0}{1}".format(runes[tier][1], ifRuneCheckedEmoji(ifRuneCheckedBool(runes[tier][0]))),
+            callback_data="['rune_check', {0}, {1}]".format(str(runes[tier][0]),
+                                                            str(ifRuneCheckedBool(
+                                                                runes[tier][
+                                                                    0])))
+
+        ),
+            types.InlineKeyboardButton(
+                text="{0}{1}".format(runes[tier + 11][1],
+                                     ifRuneCheckedEmoji(ifRuneCheckedBool(runes[tier + 11][0]))),
+                callback_data="['rune_check', {0}, {1}]".format(str(runes[tier + 11][0]),
+                                                                str(ifRuneCheckedBool(
+                                                                    runes[tier + 11][
+                                                                        0])))
+
+            ),
+            types.InlineKeyboardButton(
+                text="{0}{1}".format(runes[tier + 22][1],
+                                     ifRuneCheckedEmoji(ifRuneCheckedBool(runes[tier + 22][0]))),
+                callback_data="['rune_check', {0}, {1}]".format(str(runes[tier + 22][0]),
+                                                                str(ifRuneCheckedBool(
+                                                                    runes[tier + 22][
+                                                                        0])))
+
+            )
+        )
+
+    markup.add(types.InlineKeyboardButton("Check runewords", callback_data="['check_runewords']"))
     return markup
 
 
@@ -94,12 +137,32 @@ def weather(message):
         print(e)
 
 
+@bot.message_handler(commands=["pickupruneword"])
+def weather(message):
+    try:
+        if message.text in ["/pickupruneword", "/pickupruneword@{0}".format(bot_name)]:
+            bot.send_message(message.chat.id,
+                             'List of all runes. Pick runes you got.',
+                             reply_markup=refreshinlineButtonMarkupRunes4Runeword(message))
+    except Exception as e:
+        print(e)
+
+
 @bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'btn_add_city')
 def addnewcity(call):
     bot.edit_message_text(chat_id=call.message.chat.id,
                           message_id=call.message.message_id,
                           text='Пришли в ответ на это сообщение название нового города',
                           parse_mode='Markdown')
+
+
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'rune_check')
+def checkRune(call):
+    rune = ast.literal_eval(call.data)
+    dbwork.setRuneSettings(call.message.chat.id, rune[1])
+    bot.edit_message_reply_markup(chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=refreshinlineButtonMarkupRunes4Runeword(call.message))
 
 
 @bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'btn_respmode')
@@ -209,9 +272,22 @@ def runeInfo(call):
            "Minimum clvl: {2}\n\n" \
            "Weapon effects:\n{3}\n\n" \
            "Armor effects:\n{4}\n\n" \
-           "Recipe for a rune: {5}".format(runeInfo[0][1],tier, runeInfo[0][2], runeInfo[0][3], runeInfo[0][4],
-                                           runeInfo[0][5])
+           "Recipe for a rune:\n{5}".format(runeInfo[0][1], tier, runeInfo[0][2], runeInfo[0][3], runeInfo[0][4],
+                                            runeInfo[0][5])
     bot.send_message(call.message.chat.id, text)
+
+
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'check_runewords')
+def runewordCheck(call):
+    bot.delete_message(call.message.chat.id, call.message.id)
+    string = "Runeword:\n{0}\n\n" \
+             "Item(s)\n{1}\n\n" \
+             "Sockets count:\n{2}\n\n" \
+             "Runes:\n{3}\n\n" \
+             "Effect:\n{4}\n\n"
+    for runeword in dbwork.getRunewordsByChatId(call.message.chat.id):
+        bot.send_message(call.message.chat.id,
+                         string.format(runeword[1], runeword[3], runeword[2], runeword[5], runeword[4]))
 
 
 @bot.message_handler(content_types=["text"])
