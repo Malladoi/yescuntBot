@@ -49,3 +49,18 @@ def removecity(chatid, city):
         conn.commit()
         cursor.close()
 
+def getAllRunes():
+    sql_com = 'SELECT * FROM public."tRunes" ORDER BY id ASC'
+    cursor = conn.cursor()
+    cursor.execute(sql_com)
+    records = cursor.fetchall()
+    cursor.close()
+    return records
+
+def getRune(id: int):
+    sql_com = 'SELECT * FROM public."tRunes" where id = {0}'.format(str(id))
+    cursor = conn.cursor()
+    cursor.execute(sql_com)
+    records = cursor.fetchall()
+    cursor.close()
+    return records

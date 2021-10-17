@@ -38,7 +38,9 @@ def createWeatherForecastImg(data, scale):
     descrfont = ImageFont.truetype(font=BytesIO(reqRobotoRegular.content), size=15 * scale)
     im = Image.new(mode='RGBA', size=(315 * scale, 350 * scale), color='white')
     d = ImageDraw.Draw(im)
-    d.text(xy=(10 * scale, 10 * scale), text=datetime.now().strftime('%H:%M %d-%m-%Y'), font=datefont,
+    d.text(xy=(10 * scale, 10 * scale),
+           text=datetime.fromtimestamp(datetime.utcnow().timestamp() + data['city']['timezone']).strftime(
+               '%H:%M %d-%m-%Y'), font=datefont,
            fill=(235, 110, 75))
     d.text(xy=(10 * scale, 20 * scale), text=data['city']['name'], font=citynamefont, fill=(72, 72, 74))
     for cnt, fc in enumerate(data['list']):

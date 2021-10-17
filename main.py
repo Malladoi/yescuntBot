@@ -52,9 +52,23 @@ def refreshinlineButtonMarkup(message):
                    types.InlineKeyboardButton(text=u'\U0000274C',
                                               callback_data="['delete', '" + city[1] + "']")
                    )
-    markup.add(types.InlineKeyboardButton("Добавить", callback_data="btn_add_city"),
+    markup.add(types.InlineKeyboardButton("Добавить", callback_data="['btn_add_city']"),
                types.InlineKeyboardButton(getRespmodeEmoji(settings[0][1]),
-                                          callback_data="btn_respmode_{0}".format(str(settings[0][1]))))
+                                          callback_data="['btn_respmode', {0}]".format(str(settings[0][1]))))
+    return markup
+
+
+def refreshinlineButtonMarkupRunes(message):
+    markup = types.InlineKeyboardMarkup()
+    runes = dbwork.getAllRunes()
+    for tier in range(1, 11):
+        markup.add(types.InlineKeyboardButton(text=runes[tier][1],
+                                              callback_data="['rune', " + str(runes[tier][0]) + "]"),
+                   types.InlineKeyboardButton(text=runes[tier + 11][1],
+                                              callback_data="['rune', " + str(runes[tier + 11][0]) + "]"),
+                   types.InlineKeyboardButton(text=runes[tier + 22][1],
+                                              callback_data="['rune', " + str(runes[tier + 22][0]) + "]")
+                   )
     return markup
 
 
@@ -69,7 +83,18 @@ def weather(message):
         print(e)
 
 
-@bot.callback_query_handler(func=lambda call: call.data == 'btn_add_city')
+@bot.message_handler(commands=["runes"])
+def weather(message):
+    try:
+        if message.text in ["/runes", "/runes@{0}".format(bot_name)]:
+            bot.send_message(message.chat.id,
+                             'List of all runes',
+                             reply_markup=refreshinlineButtonMarkupRunes(message))
+    except Exception as e:
+        print(e)
+
+
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'btn_add_city')
 def addnewcity(call):
     bot.edit_message_text(chat_id=call.message.chat.id,
                           message_id=call.message.message_id,
@@ -77,61 +102,68 @@ def addnewcity(call):
                           parse_mode='Markdown')
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('btn_respmode_'))
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'btn_respmode')
 def setrespsettings(call):
     dbwork.updarechatsettings(call.message.chat.id,
-                              (lambda respmode: 1 if call.data.split('_')[2] == '2' else 2)(call.data.split('_')[2]))
+                              (lambda respmode: 1 if ast.literal_eval(call.data)[1] == 2 else 2)(
+                                  ast.literal_eval(call.data)[1]))
     bot.edit_message_reply_markup(chat_id=call.message.chat.id,
                                   message_id=call.message.message_id,
                                   reply_markup=refreshinlineButtonMarkup(call.message))
 
 
-@bot.callback_query_handler(func=lambda call: True)
-def callback_query(call):
-    if ast.literal_eval(call.data)[0] == 'delete':
-        dbwork.removecity(call.message.chat.id, ast.literal_eval(call.data)[1])
-        bot.edit_message_reply_markup(chat_id=call.message.chat.id,
-                                      message_id=call.message.message_id,
-                                      reply_markup=refreshinlineButtonMarkup(call.message))
-    if ast.literal_eval(call.data)[0] == 'city':
-        resp = wthr.weatherbycity(ast.literal_eval(call.data)[1])
-        if resp.status_code == 200:
-            dict_str = resp.content.decode("UTF-8")
-            data = ast.literal_eval(dict_str)
-            if dbwork.getchatsettings(call.message.chat.id)[0][1] == 1:
-                bot.edit_message_text(chat_id=call.message.chat.id,
-                                      message_id=call.message.id,
-                                      text="Погода для н\п {0} на {1}\n"
-                                           "{2} {3}\n"
-                                           "Т. {4} {5}\n"
-                                           "Ощущается {6} {7}\n"
-                                      # "Мин {8} {9}\n"
-                                      # "Макс {10} {11}\n"
-                                           "Влажность {8}%".format(data['name'],
-                                                                   datetime.utcfromtimestamp(
-                                                                       data['dt'] + data['timezone']).strftime(
-                                                                       '%H:%M %d-%m-%Y'),
-                                                                   getWeatherEmoji(
-                                                                       str(data['weather'][0]['main']).lower()),
-                                                                   data['weather'][0]['description'],
-                                                                   data['main']['temp'], "C{0}".format(degree_sign),
-                                                                   data['main']['feels_like'],
-                                                                   "C{0}".format(degree_sign),
-                                                                   # data['main']['temp_min'], "C{0}".format(degree_sign),
-                                                                   # data['main']['temp_max'], "C{0}".format(degree_sign),
-                                                                   data['main']['humidity']))
-            else:
-                bot.delete_message(call.message.chat.id, call.message.id)
-                bot.send_photo(chat_id=call.message.chat.id, photo=
-                picGen.createCurrWeatherImg(data['weather'][0]['icon'],
-                                            4,
-                                            datetime.utcfromtimestamp(data['dt'] + data['timezone']).strftime(
-                                                '%H:%M %d-%m-%Y'),
-                                            data['name'],
-                                            data['main']['temp'],
-                                            data['weather'][0]['description'],
-                                            data['main']['feels_like'],
-                                            data['main']['humidity']))
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'delete')
+def deleteCity(call):
+    dbwork.removecity(call.message.chat.id, ast.literal_eval(call.data)[1])
+    bot.edit_message_reply_markup(chat_id=call.message.chat.id,
+                                  message_id=call.message.message_id,
+                                  reply_markup=refreshinlineButtonMarkup(call.message))
+
+
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'city')
+def currWather(call):
+    resp = wthr.weatherbycity(ast.literal_eval(call.data)[1])
+    if resp.status_code == 200:
+        dict_str = resp.content.decode("UTF-8")
+        data = ast.literal_eval(dict_str)
+        if dbwork.getchatsettings(call.message.chat.id)[0][1] == 1:
+            bot.edit_message_text(chat_id=call.message.chat.id,
+                                  message_id=call.message.id,
+                                  text="Погода для н\п {0} на {1}\n"
+                                       "{2} {3}\n"
+                                       "Т. {4} {5}\n"
+                                       "Ощущается {6} {7}\n"
+                                  # "Мин {8} {9}\n"
+                                  # "Макс {10} {11}\n"
+                                       "Влажность {8}%".format(data['name'],
+                                                               datetime.utcfromtimestamp(
+                                                                   data['dt'] + data['timezone']).strftime(
+                                                                   '%H:%M %d-%m-%Y'),
+                                                               getWeatherEmoji(
+                                                                   str(data['weather'][0]['main']).lower()),
+                                                               data['weather'][0]['description'],
+                                                               data['main']['temp'], "C{0}".format(degree_sign),
+                                                               data['main']['feels_like'],
+                                                               "C{0}".format(degree_sign),
+                                                               # data['main']['temp_min'], "C{0}".format(degree_sign),
+                                                               # data['main']['temp_max'], "C{0}".format(degree_sign),
+                                                               data['main']['humidity']))
+        else:
+            bot.delete_message(call.message.chat.id, call.message.id)
+            bot.send_photo(chat_id=call.message.chat.id, photo=
+            picGen.createCurrWeatherImg(data['weather'][0]['icon'],
+                                        4,
+                                        datetime.utcfromtimestamp(data['dt'] + data['timezone']).strftime(
+                                            '%H:%M %d-%m-%Y'),
+                                        data['name'],
+                                        data['main']['temp'],
+                                        data['weather'][0]['description'],
+                                        data['main']['feels_like'],
+                                        data['main']['humidity']))
+
+
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'forecast')
+def forecast(call):
     if ast.literal_eval(call.data)[0] == 'forecast':
         resp = wthr.weatherbycityforecast5day(ast.literal_eval(call.data)[1], 9)
         if resp.status_code == 200:
@@ -159,6 +191,27 @@ def callback_query(call):
                 bot.delete_message(call.message.chat.id, call.message.id)
                 bot.send_photo(chat_id=call.message.chat.id, photo=
                 picGen.createWeatherForecastImg(data, 4))
+
+
+@bot.callback_query_handler(func=lambda call: ast.literal_eval(call.data)[0] == 'rune')
+def runeInfo(call):
+    runeInfo = dbwork.getRune(ast.literal_eval(call.data)[1])
+    bot.delete_message(call.message.chat.id, call.message.id)
+    tier = None
+    if runeInfo[0][0] <= 11:
+        tier = 'low'
+    elif runeInfo[0][0] <= 22:
+        tier = 'mid'
+    else:
+        tier = 'high'
+    text = "Rune: {0}\n\n" \
+           "Tier: {1}\n\n" \
+           "Minimum clvl: {2}\n\n" \
+           "Weapon effects:\n{3}\n\n" \
+           "Armor effects:\n{4}\n\n" \
+           "Recipe for a rune: {5}".format(runeInfo[0][1],tier, runeInfo[0][2], runeInfo[0][3], runeInfo[0][4],
+                                           runeInfo[0][5])
+    bot.send_message(call.message.chat.id, text)
 
 
 @bot.message_handler(content_types=["text"])
