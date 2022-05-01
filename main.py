@@ -293,7 +293,7 @@ def runewordCheck(call):
 @bot.message_handler(content_types=["text"])
 def sendcunt(message):
     try:
-        if str(message.text).lower() == 'да':
+        if str(message.text).lower() in ['да','da']:
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIEcWEo5-u9aIvKB5C0W5hGpuVD9BoIAALjEgAC9dC2HQhKdZuwAd7OIAQ',
                              message.id)
