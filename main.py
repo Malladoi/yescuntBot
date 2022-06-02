@@ -36,6 +36,7 @@ bot_name = os.environ["BOT_NAME"]
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.WARNING)  # Outputs debug messages to console.
+# bot = telebot.TeleBot(token + ":" + api_token)
 bot = telebot.AsyncTeleBot(token + ":" + api_token)
 
 runewords = dbwork.getRunewords()
@@ -293,10 +294,13 @@ def runewordCheck(call):
 @bot.message_handler(content_types=["text"])
 def sendcunt(message):
     try:
-        if str(message.text).lower() in ['да','da']:
+        if str(message.text).lower() in ['да', 'da']:
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIEcWEo5-u9aIvKB5C0W5hGpuVD9BoIAALjEgAC9dC2HQhKdZuwAd7OIAQ',
                              message.id)
+        elif message.from_user.id in os.environ["jerks"].split(','):
+            bot.reply_to(message=message, text='ТВАРЬ')
+
         if message.reply_to_message is not None:
             if str(
                     message.reply_to_message.text).lower() == 'Пришли в ответ на это сообщение название нового города'.lower() \
