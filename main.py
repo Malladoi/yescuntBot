@@ -298,7 +298,7 @@ def sendcunt(message):
             bot.send_sticker(message.chat.id,
                              'CAACAgIAAxkBAAIEcWEo5-u9aIvKB5C0W5hGpuVD9BoIAALjEgAC9dC2HQhKdZuwAd7OIAQ',
                              message.id)
-        elif message.from_user.id in os.environ["jerks"].split(','):
+        elif str(message.from_user.id) in os.environ["jerks"].split(','):
             bot.reply_to(message=message, text='ТВАРЬ')
 
         if message.reply_to_message is not None:
