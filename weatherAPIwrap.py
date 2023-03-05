@@ -10,14 +10,14 @@ iconurl = "https://openweathermap.org/img/wn/{0}@2x.png"
 
 
 def weather(inlinemessage):
-    currentweatherurl = "https://community-open-weather-map.p.rapidapi.com/weather"
+    currentweatherurl = "https://api.openweathermap.org/data/2.5/weather"
     querystring = {"lat": inlinemessage.location.latitude, "lon": inlinemessage.location.longitude, "lang": "ru",
                    "units": "metric"}
     return requests.request("GET", currentweatherurl, headers=headers, params=querystring)
 
 
 def weatherbycity(city):
-    currentweatherurl = "https://community-open-weather-map.p.rapidapi.com/weather"
+    currentweatherurl = "https://api.openweathermap.org/data/2.5/weather"
     querystring = {"q": city, "lang": "ru",
                    "units": "metric"}
     return requests.request("GET", currentweatherurl, headers=headers, params=querystring)
