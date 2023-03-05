@@ -2,5 +2,5 @@ certifi>=2020.12.5
 idna>=2.9
 pyTelegramBotAPI>=3.7.4
 requests>=2.25.0
-psycopg2>=2.9.1
+psycopg2-binary>=2.9.5
 Pillow>=8.3.2

@@ -13,13 +13,12 @@ bot_name = os.environ["BOT_NAME"]
 
 bot = telebot.TeleBot(token + ":" + api_token)
 
-p = urlparse(os.environ["postgre_conn_str"])
 pg_connection_dict = {
-    'dbname': p.scheme,
-    'user': p.username,
-    'password': p.password,
-    'port': p.port,
-    'host': p.hostname,
+    'dbname': os.environ["POSTGRE_DB"],
+    'user': os.environ["POSTGRE_USER"],
+    'password': os.environ["POSTGRE_PASSW"],
+    'port': os.environ["POSTGRE_PORT"],
+    'host': os.environ["POSTGRE_HOST"],
     'application_name': bot_name
 }
 
@@ -45,7 +44,7 @@ def reloadparams(message):
         if message.from_user.id in [admin[0] for admin in adminids]:
             stickerResponses.clear()
             stickerResponses.update(dict(dbwork.getstickerresponses(conn=conn)))
-            bot.reply_to(message=message, text='')
+            bot.reply_to(message=message, text='Params reloaded')
             logger.LogInfo(message='Params reloaded by userid:{userid}'.format(userid=message.from_user.id))
     except Exception as e:
         logger.LogError(message='Params reload failed by userid:{userid}. Error message:{errmsg}'.format(

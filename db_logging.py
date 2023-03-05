@@ -21,21 +21,21 @@ class dblogger:
         if type == "Info":
             newLog = {
                 'application_name': appName,
-                'host':os.environ['COMPUTERNAME'],
+                'host':os.environ['ENV_NAME'],
                 'level':"Info",
                 'message':message
         }
         elif type == "Error":
             newLog = {
                 'application_name': appName,
-                'host': os.environ['COMPUTERNAME'],
+                'host': os.environ['ENV_NAME'],
                 'level': "Error",
                 'message': message
             }
         elif type == "Debug":
             newLog = {
                 'application_name': appName,
-                'host': os.environ['COMPUTERNAME'],
+                'host': os.environ['ENV_NAME'],
                 'level': "Debug",
                 'message': message
             }
